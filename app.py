@@ -62,7 +62,7 @@ c4.metric("Connections at risk", f"{pop_red:,.0f}")
 COLORS = {"RED": [220,40,40,200], "YELLOW": [240,190,30,200],
           "GREEN": [40,160,70,160]}
 df["fill"] = df["risk_level"].map(lambda r: COLORS.get(r, COLORS["GREEN"]))
-df["radius"] = 200 + df["pop_served"] / 20
+df["radius"] = 80 + df["pop_served"] / 80
 
 layer = pdk.Layer("ScatterplotLayer", df,
     get_position=["lon", "lat"], get_fill_color="fill",
