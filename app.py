@@ -35,9 +35,12 @@ else:
 
 # ---------- Risk engine ----------
 rain_factor = min(rain / 150, 1.0)
-df["live_risk"] = df["base_risk"] * (0.3 + 0.7 * rain_factor)
+df["base_risk"] = pd.to_numeric(df["base_risk"], errors="coerce").fillna(0)
+df["live_risk"] = (df["base_risk"] * (0.3 + 0.7 * rain_factor)).clip(0, 1)
 df["risk_level"] = pd.cut(df["live_risk"], bins=[0, .3, .6, 1],
-                          labels=["GREEN", "YELLOW", "RED"])
+                          labels=["GREEN", "YELLOW", "RED"],
+                          include_lowest=True)
+df["risk_level"] = df["risk_level"].astype(str).replace("nan", "GREEN")
 df["priority"] = df["live_risk"] * df["pop_served"]
 
 n_red = int((df.risk_level == "RED").sum())
@@ -53,12 +56,12 @@ c3.metric("🟡 YELLOW towers", n_yel)
 c4.metric("Connections at risk", f"{pop_red:,.0f}")
 
 # ---------- Map ----------
-def color(row):
-    return {"RED": [220, 40, 40, 200], "YELLOW": [240, 190, 30, 200],
-            "GREEN": [40, 160, 70, 160]}[row]
-df["fill"] = df["risk_level"].astype(str).map(
-    lambda r: {"RED": [220,40,40,200], "YELLOW": [240,190,30,200],
-               "GREEN": [40,160,70,160]}[r])
+#def color(row):
+    #return {"RED": [220, 40, 40, 200], "YELLOW": [240, 190, 30, 200],
+            #"GREEN": [40, 160, 70, 160]}[row]
+COLORS = {"RED": [220,40,40,200], "YELLOW": [240,190,30,200],
+          "GREEN": [40,160,70,160]}
+df["fill"] = df["risk_level"].map(lambda r: COLORS.get(r, COLORS["GREEN"]))
 df["radius"] = 200 + df["pop_served"] / 20
 
 layer = pdk.Layer("ScatterplotLayer", df,
