@@ -45,7 +45,7 @@ df["priority"] = df["live_risk"] * df["pop_served"]
 
 n_red = int((df.risk_level == "RED").sum())
 n_yel = int((df.risk_level == "YELLOW").sum())
-pop_red = df.loc[df.risk_level.isin(["RED", "YELLOW"]), "pop_served"].sum()
+pop_at_risk = df.loc[df.risk_level.isin(["RED","YELLOW"]), "pop_served"].sum()
 
 # ---------- Header metrics ----------
 st.title("SignalArk — Communities About to Go Dark")
