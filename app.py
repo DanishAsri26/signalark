@@ -18,17 +18,22 @@ st.sidebar.caption("Pre-emptive connectivity blackout prediction — Temerloh, P
 
 use_live = st.sidebar.toggle("Use live rainfall forecast", value=False)
 
+@st.cache_data(ttl=1800)   # refresh at most every 30 min
+def get_live_rain():
+    r = requests.get("https://api.open-meteo.com/v1/forecast",
+        params={"latitude": 3.45, "longitude": 102.42,
+                "daily": "precipitation_sum", "forecast_days": 3,
+                "timezone": "Asia/Singapore"}, timeout=10)
+    d = r.json()["daily"]
+    return float(sum(d["precipitation_sum"])), d["time"][0], d["time"][-1]
+
 if use_live:
     try:
-        r = requests.get("https://api.open-meteo.com/v1/forecast",
-            params={"latitude": 3.45, "longitude": 102.42,
-                    "daily": "precipitation_sum", "forecast_days": 3,
-                    "timezone": "Asia/Singapore"}, timeout=10)
-        rain = float(sum(r.json()["daily"]["precipitation_sum"]))
-        st.sidebar.success(f"Live 3-day forecast: {rain:.0f} mm")
+        rain, d1, d2 = get_live_rain()
+        st.sidebar.success(f"Live forecast {d1} → {d2}: {rain:.0f} mm")
     except Exception:
         rain = 11.0
-        st.sidebar.warning("API unavailable — using fallback 11 mm")
+        st.sidebar.warning("API unavailable — fallback 11 mm")
 else:
     rain = st.sidebar.slider("Scenario: 3-day rainfall (mm)", 0, 300, 11,
         help="Dec 2021 event ≈ 250 mm")
