@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pydeck as pdk
 import requests
+import json
 
 st.set_page_config(page_title="SignalArk", page_icon="📡", layout="wide")
 
@@ -74,6 +75,21 @@ st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
     map_style="road",
     tooltip={"text": "Site {site_id}\nRisk: {risk_level}\n"
                      "People: {pop_served}\nElev: {elev_m} m"}))
+
+show_plan = st.sidebar.toggle("Show deployment plan (250 mm scenario)", value=False)
+if show_plan:
+    plan = pd.read_csv("deployment_plan.csv")
+    gj = json.load(open("routes.geojson"))
+    route_layer = pdk.Layer("GeoJsonLayer", gj, get_line_color=[30,80,220,220],
+                            line_width_min_pixels=3)
+    site_layer = pdk.Layer("ScatterplotLayer", plan.dropna(subset=['lat']),
+        get_position=["lon","lat"], get_fill_color=[30,80,220,255],
+        get_radius=400, pickable=True)
+    st.pydeck_chart(pdk.Deck(layers=[layer, route_layer, site_layer],
+        initial_view_state=view, map_style="road",
+        tooltip={"text":"Rank {rank}\n{status}\nConnections: {connections}"}))
+    st.subheader("🚚 Deployment order (by need)")
+    st.dataframe(plan, use_container_width=True)
 
 # ---------- Priority action list ----------
 st.subheader("⚠️ Priority pre-positioning list")
