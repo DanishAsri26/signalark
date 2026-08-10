@@ -54,12 +54,24 @@ n_yel = int((df.risk_level == "YELLOW").sum())
 pop_at_risk = df.loc[df.risk_level.isin(["RED","YELLOW"]), "pop_served"].sum()
 
 # ---------- Header metrics ----------
+UNIQUE_POP = json.load(open("unique_pop.json"))
+
+def lookup_unique(rain):
+    keys = sorted(int(k) for k in UNIQUE_POP)
+    nearest = min(keys, key=lambda k: abs(k - rain))
+    return UNIQUE_POP[str(nearest)]
+
+unique_people = lookup_unique(rain)
+
 st.title("SignalArk — Communities About to Go Dark")
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("3-day rainfall", f"{rain:.0f} mm")
 c2.metric("🔴 RED towers", n_red)
 c3.metric("🟡 YELLOW towers", n_yel)
-c4.metric("Connections at risk (🟡+🔴)", f"{pop_at_risk:,.0f}")
+c4.metric("Connections at risk", f"{pop_at_risk:,.0f}",
+          help="Tower-coverage relationships; towers overlap so this exceeds unique residents")
+c5.metric("👥 Residents affected", f"{unique_people:,.0f}",
+          help="Deduplicated population inside at-risk coverage areas")
 
 # ---------- Map ----------
 COLORS = {"RED": [220,40,40,200], "YELLOW": [240,190,30,200],
