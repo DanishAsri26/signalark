@@ -71,10 +71,6 @@ layer = pdk.Layer("ScatterplotLayer", df,
     get_position=["lon", "lat"], get_fill_color="fill",
     get_radius="radius", pickable=True)
 view = pdk.ViewState(latitude=3.45, longitude=102.40, zoom=9.3)
-st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
-    map_style="road",
-    tooltip={"text": "Site {site_id}\nRisk: {risk_level}\n"
-                     "People: {pop_served}\nElev: {elev_m} m"}))
 
 show_plan = st.sidebar.toggle("Show deployment plan (250 mm scenario)", value=False)
 if show_plan:
@@ -90,6 +86,11 @@ if show_plan:
         tooltip={"text":"Rank {rank}\n{status}\nConnections: {connections}"}))
     st.subheader("🚚 Deployment order (by need)")
     st.dataframe(plan, use_container_width=True)
+else:
+    st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
+        map_style="road",
+        tooltip={"text": "Site {site_id}\nRisk: {risk_level}\n"
+                         "People: {pop_served}\nElev: {elev_m} m"}))
 
 # ---------- Priority action list ----------
 st.subheader("⚠️ Priority pre-positioning list")
