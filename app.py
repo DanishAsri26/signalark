@@ -45,20 +45,17 @@ df["priority"] = df["live_risk"] * df["pop_served"]
 
 n_red = int((df.risk_level == "RED").sum())
 n_yel = int((df.risk_level == "YELLOW").sum())
-pop_red = df.loc[df.risk_level == "RED", "pop_served"].sum()
+pop_red = df.loc[df.risk_level.isin(["RED", "YELLOW"]), "pop_served"].sum()
 
 # ---------- Header metrics ----------
 st.title("SignalArk — Communities About to Go Dark")
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Rainfall scenario", f"{rain:.0f} mm / 3 days")
+c1.metric("3-day rainfall", f"{rain:.0f} mm")
 c2.metric("🔴 RED towers", n_red)
 c3.metric("🟡 YELLOW towers", n_yel)
-c4.metric("Connections at risk", f"{pop_red:,.0f}")
+c4.metric("Connections at risk (🟡+🔴)", f"{pop_at_risk:,.0f}")
 
 # ---------- Map ----------
-#def color(row):
-    #return {"RED": [220, 40, 40, 200], "YELLOW": [240, 190, 30, 200],
-            #"GREEN": [40, 160, 70, 160]}[row]
 COLORS = {"RED": [220,40,40,200], "YELLOW": [240,190,30,200],
           "GREEN": [40,160,70,160]}
 df["fill"] = df["risk_level"].map(lambda r: COLORS.get(r, COLORS["GREEN"]))
