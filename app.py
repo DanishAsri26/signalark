@@ -95,7 +95,6 @@ if show_plan:
     plan = pd.DataFrame(PLANS[str(band)])
     gj   = ROUTES[str(band)]
 
-    # ← ADD DEPOT HERE
     DEPOT = pd.DataFrame([{"lat": 3.4570, "lon": 102.4905,
                            "name": "Staging depot (80 m, flood-safe)"}])
 
@@ -121,11 +120,10 @@ if show_plan:
             get_radius=700, pickable=True)
 
         st.pydeck_chart(pdk.Deck(
-            layers=[layer, route_layer, site_layer, depot_layer],   # ← depot added
+            layers=[layer, route_layer, site_layer, depot_layer], 
             initial_view_state=view, map_style="road",
             tooltip={"text":"Rank {rank}\n{status}\nConnections: {connections}"}))
 
-        # ← ADD CAPTION HERE
         st.caption("🟠 Orange = dispatch depot (80 m elevation, verified dry in Dec 2021). "
                    "🔵 Blue = staging sites and safe routes. All route distances measured from the depot.")
 
@@ -134,6 +132,8 @@ if show_plan:
         st.subheader(f"🚚 Deployment order — {len(plan)} zones "
                      f"({n_ok} reachable, {n_cut} cut off)")
         st.dataframe(plan, use_container_width=True)
+
+else:
     st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
         map_style="road",
         tooltip={"text": "Site {site_id}\nRisk: {risk_level}\n"
