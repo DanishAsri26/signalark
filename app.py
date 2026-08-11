@@ -37,7 +37,7 @@ if use_live:
         st.sidebar.warning("API unavailable — fallback 11 mm")
 else:
     rain = st.sidebar.slider("Scenario: 3-day rainfall (mm)", 0, 300, 11,
-        help="Dec 2021 event ≈ 250 mm")
+    help="Dec 2021 Temerloh flood = 245 mm (16–19 Dec, ERA5 reanalysis)")
 
 # ---------- Risk engine ----------
 rain_factor = min(rain / 150, 1.0)
