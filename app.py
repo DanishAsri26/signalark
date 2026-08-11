@@ -40,7 +40,7 @@ else:
     help="Dec 2021 Temerloh flood = 245 mm (16–19 Dec, ERA5 reanalysis)")
 
 # ---------- Risk engine ----------
-rain_factor = min(rain / 150, 1.0)
+rain_factor = min(rain / 300, 1.0)
 df["base_risk"] = pd.to_numeric(df["base_risk"], errors="coerce").fillna(0)
 df["live_risk"] = (df["base_risk"] * (0.3 + 0.7 * rain_factor)).clip(0, 1)
 df["risk_level"] = pd.cut(df["live_risk"], bins=[0, .3, .6, 1],
@@ -84,20 +84,42 @@ layer = pdk.Layer("ScatterplotLayer", df,
     get_radius="radius", pickable=True)
 view = pdk.ViewState(latitude=3.45, longitude=102.40, zoom=9.3)
 
-show_plan = st.sidebar.toggle("Show deployment plan (250 mm scenario)", value=False)
+show_plan = st.sidebar.toggle("Show deployment plan", value=False)
+
 if show_plan:
-    plan = pd.read_csv("deployment_plan.csv")
-    gj = json.load(open("routes.geojson"))
-    route_layer = pdk.Layer("GeoJsonLayer", gj, get_line_color=[30,80,220,220],
-                            line_width_min_pixels=3)
-    site_layer = pdk.Layer("ScatterplotLayer", plan.dropna(subset=['lat']),
-        get_position=["lon","lat"], get_fill_color=[30,80,220,255],
-        get_radius=400, pickable=True)
-    st.pydeck_chart(pdk.Deck(layers=[layer, route_layer, site_layer],
-        initial_view_state=view, map_style="road",
-        tooltip={"text":"Rank {rank}\n{status}\nConnections: {connections}"}))
-    st.subheader("🚚 Deployment order (by need)")
-    st.dataframe(plan, use_container_width=True)
+    PLANS  = json.load(open("plans_by_rain.json"))
+    ROUTES = json.load(open("routes_by_rain.json"))
+    bands  = sorted(int(b) for b in PLANS)
+    band   = min(bands, key=lambda b: abs(b - rain))
+
+    plan = pd.DataFrame(PLANS[str(band)])
+    gj   = ROUTES[str(band)]
+
+    st.caption(f"Deployment plan modelled at {band} mm "
+               f"(nearest band to current {rain:.0f} mm forecast)")
+
+    if len(plan) == 0:
+        # no blackout zones at this rainfall — show the plain risk map
+        st.success(f"✅ No blackout zones predicted at {band} mm — no deployment needed.")
+        st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
+            map_style="road",
+            tooltip={"text": "Site {site_id}\nRisk: {risk_level}\n"
+                             "People: {pop_served}\nElev: {elev_m} m"}))
+    else:
+        route_layer = pdk.Layer("GeoJsonLayer", gj, get_line_color=[30,80,220,220],
+                                line_width_min_pixels=3)
+        site_layer = pdk.Layer("ScatterplotLayer", plan.dropna(subset=['lat']),
+            get_position=["lon","lat"], get_fill_color=[30,80,220,255],
+            get_radius=400, pickable=True)
+        st.pydeck_chart(pdk.Deck(layers=[layer, route_layer, site_layer],
+            initial_view_state=view, map_style="road",
+            tooltip={"text":"Rank {rank}\n{status}\nConnections: {connections}"}))
+
+        n_cut = int(plan.status.str.startswith("CUT OFF").sum())
+        n_ok  = int((plan.status == "REACHABLE").sum())
+        st.subheader(f"🚚 Deployment order — {len(plan)} zones "
+                     f"({n_ok} reachable, {n_cut} cut off)")
+        st.dataframe(plan, use_container_width=True)
 else:
     st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
         map_style="road",
