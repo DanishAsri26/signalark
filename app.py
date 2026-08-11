@@ -95,11 +95,14 @@ if show_plan:
     plan = pd.DataFrame(PLANS[str(band)])
     gj   = ROUTES[str(band)]
 
+    # ← ADD DEPOT HERE
+    DEPOT = pd.DataFrame([{"lat": 3.4570, "lon": 102.4905,
+                           "name": "Staging depot (80 m, flood-safe)"}])
+
     st.caption(f"Deployment plan modelled at {band} mm "
                f"(nearest band to current {rain:.0f} mm forecast)")
 
     if len(plan) == 0:
-        # no blackout zones at this rainfall — show the plain risk map
         st.success(f"✅ No blackout zones predicted at {band} mm — no deployment needed.")
         st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
             map_style="road",
@@ -111,16 +114,26 @@ if show_plan:
         site_layer = pdk.Layer("ScatterplotLayer", plan.dropna(subset=['lat']),
             get_position=["lon","lat"], get_fill_color=[30,80,220,255],
             get_radius=400, pickable=True)
-        st.pydeck_chart(pdk.Deck(layers=[layer, route_layer, site_layer],
+
+        # ← ADD DEPOT LAYER HERE
+        depot_layer = pdk.Layer("ScatterplotLayer", DEPOT,
+            get_position=["lon","lat"], get_fill_color=[255,140,0,255],
+            get_radius=700, pickable=True)
+
+        st.pydeck_chart(pdk.Deck(
+            layers=[layer, route_layer, site_layer, depot_layer],   # ← depot added
             initial_view_state=view, map_style="road",
             tooltip={"text":"Rank {rank}\n{status}\nConnections: {connections}"}))
+
+        # ← ADD CAPTION HERE
+        st.caption("🟠 Orange = dispatch depot (80 m elevation, verified dry in Dec 2021). "
+                   "🔵 Blue = staging sites and safe routes. All route distances measured from the depot.")
 
         n_cut = int(plan.status.str.startswith("CUT OFF").sum())
         n_ok  = int((plan.status == "REACHABLE").sum())
         st.subheader(f"🚚 Deployment order — {len(plan)} zones "
                      f"({n_ok} reachable, {n_cut} cut off)")
         st.dataframe(plan, use_container_width=True)
-else:
     st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view,
         map_style="road",
         tooltip={"text": "Site {site_id}\nRisk: {risk_level}\n"
